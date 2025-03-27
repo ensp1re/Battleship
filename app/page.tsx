@@ -7,6 +7,16 @@ import Login from "@/components/Login"
 import GameInfo from "@/components/GameInfo"
 import Console from "@/components/Console"
 import Battleship from "@/components/Battleship"
+import SuccinctSocials from "@/components/SuccinctSocials"
+import { verifyBattleship } from "@/lib/service"
+import { ProofResponse } from "@/types/battleship"
+
+interface IGameResult {
+  ships_sunk: number
+  total_shots: number
+  hit_percentage: number
+  winner: boolean
+}
 
 export default function Home(): ReactElement {
   const [username, setUsername] = useState<string>("")
@@ -18,6 +28,19 @@ export default function Home(): ReactElement {
   const [winner, setWinner] = useState<string>("")
   const [isMusicPlaying, setIsMusicPlaying] = useState<boolean>(false)
   const audioElementRef = useRef<HTMLAudioElement | null>(null)
+  const [result, setResult] = useState<ProofResponse | null>(null)
+
+
+  const [isProofing, setIsProofing] = useState<boolean>(false)
+  const [isStarted, setIsStarted] = useState<boolean>(false)
+
+  const [gameResult, setGameResult] = useState<IGameResult | null>({
+    ships_sunk: 0,
+    total_shots: 0,
+    hit_percentage: 0,
+    winner: false,
+  });
+
 
   useEffect(() => {
     const storedUsername = sessionStorage.getItem("battleshipUsername")
@@ -63,7 +86,6 @@ export default function Home(): ReactElement {
     setGameOver(false)
     setScore(0)
 
-    // Ensure music is playing when game starts
     if (audioElementRef && !isMusicPlaying) {
       audioElementRef.current?.play().catch(() => console.log("Audio autoplay prevented by browser"))
       setIsMusicPlaying(true)
@@ -72,6 +94,10 @@ export default function Home(): ReactElement {
 
   const showGameInfo = () => {
     setShowInfo(true)
+  }
+
+  const handleGameResult = (result: IGameResult) => {
+    setGameResult(result)
   }
 
   const handleGameOver = (playerWon: boolean) => {
@@ -86,8 +112,40 @@ export default function Home(): ReactElement {
     setShowConsole(false)
   }
 
-  const handleProve = () => {
+  const handleSetResult = (result: ProofResponse) => {
+    setResult(result)
+    setIsProofing(false)
+    setIsStarted(false)
+  }
+
+  const handleProve = async (): Promise<void> => {
     setShowConsole(true)
+    setIsProofing(true)
+    setIsStarted(true)
+    try {
+      const data: IGameResult = {
+        ships_sunk: gameResult?.ships_sunk || 0,
+        total_shots: gameResult?.total_shots || 0,
+        hit_percentage: gameResult?.hit_percentage || 0,
+        winner: winner === username,
+      }
+
+      const response = await verifyBattleship(username, data)
+
+      if (response.success) {
+        handleSetResult(response)
+        console.log("Proof generated successfully:", response)
+      } else {
+        console.error("Error generating proof:", response)
+        alert("Error generating proof. Please try again.")
+      }
+    } catch (error) {
+      console.error("Error generating proof:", error)
+      alert("Error generating proof. Please try again.")
+    } finally {
+      setIsProofing(false)
+      setIsStarted(false)
+    }
   }
 
   const updateScore = (points: number) => {
@@ -144,20 +202,33 @@ export default function Home(): ReactElement {
                 >
                   Play Again
                 </button>
-                <button
-                  onClick={handleProve}
-                  className="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded"
-                >
-                  Prove
-                </button>
+                {result?.success !== true && (
+                  <button
+                    disabled={isProofing || isStarted}
+                    onClick={handleProve}
+                    className={
+                      `bg-pink-500 hover:bg-pink-600 text-white font-bold py-2 px-4 rounded ${isProofing || isStarted ? "opacity-50 cursor-not-allowed" : ""
+                      }`
+                    }
+                  >
+                    Prove
+                  </button>
+                )}
               </div>
-              {showConsole && <Console />}
+              {showConsole && <Console
+                isStarted={isStarted}
+                isProofing={isProofing}
+                result={result}
+                isError={result?.success === false}
+                errorMessage={result?.success === false ? "Error generating proof" : ""}
+              />}
             </div>
           ) : (
-            <Battleship username={username} onGameOver={handleGameOver} onScoreUpdate={updateScore} score={score} />
+            <Battleship username={username} onGameOver={handleGameOver} onScoreUpdate={updateScore} score={score} onGameResult={handleGameResult} />
           )}
         </div>
       </div>
+      <SuccinctSocials />
     </main>
   )
 }

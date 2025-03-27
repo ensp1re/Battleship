@@ -19,3 +19,19 @@ export interface Cell {
 export type Board = Cell[][];
 
 export type GameState = "setup" | "playing" | "gameOver";
+
+export interface IGameResult {
+  ships_sunk: number;
+  total_shots: number;
+  hit_percentage: number;
+  winner: boolean;
+}
+
+export interface ProofResponse {
+  success: boolean;
+  proofHash: string;
+  username: string;
+  game_result: IGameResult;
+  timestamp: number;
+  verified: boolean;
+}

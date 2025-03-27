@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client"
 
 import React, { useState, useEffect, useRef, type ReactElement, useCallback } from "react"
@@ -8,11 +9,18 @@ interface BattleshipProps {
     username: string
     onGameOver: (playerWon: boolean) => void
     onScoreUpdate: (points: number) => void
+    onGameResult: (result: IGameResult) => void
     score: number
 }
 
-export default function Battleship({ username, onGameOver, onScoreUpdate, score }: BattleshipProps): ReactElement {
-    console.log("Battleship component rendered", username)
+interface IGameResult {
+    ships_sunk: number
+    total_shots: number
+    hit_percentage: number
+    winner: boolean
+}
+
+export default function Battleship({ onGameOver, onScoreUpdate, onGameResult, score }: BattleshipProps): ReactElement {
     const [playerBoard, setPlayerBoard] = useState<Board>([])
     const [computerBoard, setComputerBoard] = useState<Board>([])
     const [playerShips, setPlayerShips] = useState<Ship[]>([])
@@ -29,6 +37,15 @@ export default function Battleship({ username, onGameOver, onScoreUpdate, score 
         destroyer: 3,
         submarine: 4,
     })
+
+    const [gameResult, setGameResult] = useState<IGameResult | null>({
+        ships_sunk: 0,
+        total_shots: 0,
+        hit_percentage: 0,
+        winner: false,
+    });
+
+
     const [gameStartTime, setGameStartTime] = useState<number>(0)
     const [elapsedTime, setElapsedTime] = useState<number>(0)
     const [huntStrategy, setHuntStrategy] = useState<{
@@ -324,7 +341,17 @@ export default function Battleship({ username, onGameOver, onScoreUpdate, score 
                 if (newPlayerShips.every((ship) => ship.sunk)) {
                     setGameState("gameOver");
                     setMessage("Game over! Ferris won.");
+                    onGameResult(gameResult as IGameResult);
                     onGameOver(false);
+
+                    setGameResult((prev) => {
+                        if (!prev) return null;
+                        return {
+                            ...prev,
+                            winner: false,
+                        };
+                    });
+
                     return;
                 }
             }
@@ -453,6 +480,16 @@ export default function Battleship({ username, onGameOver, onScoreUpdate, score 
 
                         const pointsForShip = newComputerShips[shipIndex].size * 20
                         onScoreUpdate(pointsForShip)
+
+                        setGameResult(prev => {
+                            if (!prev) return null
+                            return {
+                                ...prev,
+                                ships_sunk: prev.ships_sunk + 1,
+                                total_shots: prev.total_shots + 1,
+                                hit_percentage: ((prev.ships_sunk + 1) / (prev.total_shots + 1)) * 100,
+                            }
+                        })
                     } else {
                         onScoreUpdate(10)
                     }
@@ -461,11 +498,30 @@ export default function Battleship({ username, onGameOver, onScoreUpdate, score 
                 setComputerBoard(newComputerBoard)
                 setComputerShips(newComputerShips)
 
+                setGameResult((prev) => {
+                    if (!prev) return null
+                    return {
+                        ...prev,
+                        total_shots: prev.total_shots + 1,
+                        hit_percentage: (prev.ships_sunk / (prev.total_shots + 1)) * 100,
+                    }
+                })
+
                 if (newComputerShips.every((ship) => ship.sunk)) {
                     setGameState("gameOver")
+                    onGameResult(gameResult as IGameResult);
+
 
                     const timeBonus = calculateTimeBonus(elapsedTime)
                     onScoreUpdate(timeBonus)
+
+                    setGameResult((prev) => {
+                        if (!prev) return null
+                        return {
+                            ...prev,
+                            winner: true,
+                        }
+                    })
 
                     setMessage(`Congratulations! You won with a time bonus of ${timeBonus} points!`)
                     onGameOver(true)
@@ -488,6 +544,15 @@ export default function Battleship({ username, onGameOver, onScoreUpdate, score 
                 }
 
                 setComputerBoard(newComputerBoard)
+
+                setGameResult(prev => {
+                    if (!prev) return null
+                    return {
+                        ...prev,
+                        total_shots: prev.total_shots + 1,
+                        hit_percentage: (prev.ships_sunk / (prev.total_shots + 1)) * 100,
+                    }
+                })
 
                 setIsPlayerTurn(false)
                 setTimeout(() => {
@@ -593,12 +658,12 @@ export default function Battleship({ username, onGameOver, onScoreUpdate, score 
 
     return (
         <div className="flex flex-col items-center">
-            <div className="mb-4 text-center relative">
-                <div className="absolute -top-20 left-1/2 transform -translate-x-1/2 w-24 h-24 sm:w-32 sm:h-32">
-                    <Image src="/mascot.gif" alt="Crab Mascot" width={150} height={150} className="object-contain" />
+            <div className="mb-2 text-center relative">
+                <div className="relative flex justify-center items-center w-full h-12 sm:h-32 mb-4">
+                    <Image src="/mascot.gif" alt="Crab Mascot" width={100} height={100} className="object-contain mx-auto" />
                 </div>
 
-                <h2 className="text-xl font-bold text-pink-600 mb-2 mt-12">Battleship</h2>
+                <h2 className="text-xl font-bold text-pink-600 mb-2 mt-2">Battleship</h2>
                 <p className="text-gray-700 mb-2">{message}</p>
                 <div className="flex justify-center items-center gap-4">
                     <p className="text-lg font-semibold">Score: {score}</p>
@@ -663,7 +728,6 @@ export default function Battleship({ username, onGameOver, onScoreUpdate, score 
                 <div className="w-full lg:w-auto">
                     <h3 className="text-center mb-2 font-semibold">Your Grid</h3>
                     <div className="grid grid-cols-11 mx-auto" style={{ maxWidth: "fit-content" }}>
-                        {/* Column headers */}
                         <div className="w-8 h-8 sm:w-10 sm:h-10"></div>
                         {Array.from({ length: 10 }, (_, i) => (
                             <div key={i} className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center font-semibold">
@@ -671,7 +735,6 @@ export default function Battleship({ username, onGameOver, onScoreUpdate, score 
                             </div>
                         ))}
 
-                        {/* Rows with row headers */}
                         {playerBoard.map((row, rowIndex) => (
                             <React.Fragment key={`row-${rowIndex}`}>
                                 <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center font-semibold">
@@ -711,7 +774,7 @@ export default function Battleship({ username, onGameOver, onScoreUpdate, score 
                     </div>
                 </div>
 
-                <div className="w-full lg:w-auto mt-8 lg:mt-0">
+                <div className="w-full lg:w-auto mt-8 mb-12 lg:mb-0 lg:mt-0">
                     <h3 className="text-center mb-2 font-semibold">Ferris&apos;s Grid</h3>
                     <div className="grid grid-cols-11 mx-auto" style={{ maxWidth: "fit-content" }}>
                         {/* Column headers */}
@@ -722,7 +785,6 @@ export default function Battleship({ username, onGameOver, onScoreUpdate, score 
                             </div>
                         ))}
 
-                        {/* Rows with row headers */}
                         {computerBoard.map((row, rowIndex) => (
                             <React.Fragment key={`row-${rowIndex}`}>
                                 <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center font-semibold">
