@@ -124,9 +124,9 @@ export default function Home(): ReactElement {
     setIsStarted(true)
     try {
       const data: IGameResult = {
-        ships_sunk: gameResult?.ships_sunk || 0,
-        total_shots: gameResult?.total_shots || 0,
-        hit_percentage: gameResult?.hit_percentage || 0,
+        ships_sunk: Math.floor(gameResult?.ships_sunk || 0),
+        total_shots: Math.floor(gameResult?.total_shots || 0),
+        hit_percentage: Math.floor(gameResult?.hit_percentage || 0),
         winner: winner === username,
       }
 
