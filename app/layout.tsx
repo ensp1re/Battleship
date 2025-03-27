@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Link from "next/link";
-import { Twitter } from "lucide-react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,19 +32,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
-        <div className="absolute bottom-0 left-0 text-white p-4 text-center">
-          <span>
-            Made by{" "}
-            <Link
-              href="https://x.com/0xEnsp1re"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-white font-bold hover:text-pink-200 transition-colors duration-300"
-            >
-              0xEnsp1re <Twitter size={16} className="inline" />
-            </Link>
-          </span>
-        </div>
+        
       </body>
     </html>
   );
