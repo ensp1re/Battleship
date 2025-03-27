@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "Battleship",
   description: "Engage in an epic game of Battleship with Ferris.",
   keywords: ["Battleship", "Ferris", "Game", "Strategy", "Rust", "Succinct"],
-  authors: [{ name: "Enspire", url: "https://yourwebsite.com" }],
+  authors: [{ name: "Enspire", url: "https://x.com/0xEnsp1re" }],
   themeColor: "#1E90FF",
 };
 
